@@ -1,0 +1,112 @@
+import { PostLayout } from '@/components/PostLayout'
+
+export const article = {
+  author: 'CodePsy-2001',
+  date: '2025-03-11',
+  title: 'Postgres 하나로 끝내는 백엔드 설계',
+  description: 'Redis, RabbitMQ, 기타 SaaS 툴 없이 개발하세요. 스택 추가의 고통을 확실히 끝내버릴 수 있는 최고의 방법.',
+  tags: ['Shell', 'Linux']
+}
+
+export const metadata = {
+  title: article.title,
+  description: article.description,
+}
+
+export default (props) => <PostLayout article={article} {...props} />
+
+## Postgres 스택으로 통일하는 이유
+
+백엔드 시스템에 포함된 컴포넌트를 줄이면 그만큼 불필요한 기능을 중복 구현하거나 유지보수하는 작업도 줄일 수 있습니다.
+인지적 부담이 줄어들고, 시스템의 모든 요소를 깊이 이해할 수 있기 때문에(예: 이해가 안 되면 테이블을 까서라도 해결 가능) 새로운 기술 스택을 추가하는 데 생기는 고통을 정말 혁신적으로 줄일 수 있습니다.
+
+개인적으로는 **가능한 빨리 모노레포를 도입하라**와 더불어 개인적으로 깊이 신용하는 백엔드 서비스 구축 수칙입니다.
+
+## redis 대체: unlogged table
+
+PostgreSQL 기본 포함 기능인 Unlogged Table을 사용하면 Postgres를 redis와 유사하게 사용할 수 있습니다.
+
+```sql
+-- 1. Unlogged 테이블 생성
+CREATE UNLOGGED TABLE ephemeral_cache (
+    key TEXT PRIMARY KEY,
+    value TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 2. 데이터 삽입 예시
+INSERT INTO ephemeral_cache (key, value) VALUES ('user_session_1', 'session_data');
+
+-- 3. 조회 예시
+SELECT * FROM ephemeral_cache WHERE key = 'user_session_1';
+```
+
+- **트랜적션 로그(WAL)를 남기지 않아** INSERT와 UPDATE 속도가 빠름
+- Redis처럼 **유실되어도 큰 문제가 없는 다량의 데이터**를 다룰 때 높은 쓰기 성능을 기대할 수 있음
+- 일반적으로 쓰기 성능은 Redis와 비슷하고, 읽기 성능은 100배 느리지만 대략 10~15ms에 불과함
+
+`node-postgres` 예제
+
+```javascript
+const { Pool } = require('pg');
+
+const pool = new Pool({ connectionString: '<connection_string>' });
+
+// 삽입
+async function set(key, value) {
+  const query = 'INSERT INTO ephemeral_cache(key, value) VALUES($1, $2)';
+  await pool.query(query, [key, value]);
+}
+
+// 조회
+async function get(key) {
+  const query = 'SELECT * FROM ephemeral_cache WHERE key = $1';
+  const res = await pool.query(query, [key]);
+  return res.rows[0];
+}
+```
+
+## RabbitMQ 대체: graphile-worker
+
+Graphile Worker를 사용하면 백그라운드 작업 큐가 필요한 대부분의 사용사례에 대처할 수 있습니다.
+
+CLI 모드로 간편하게 시작할 수 있고, 나중에 코드베이스가 복잡해져도 쉽게 Library 모드로 변경할 수 있습니다.
+
+```shell
+npx graphile-worker -c "postgres://user:pass@host:port/db?ssl=true"
+# or, if you prefer env vars
+#   DATABASE_URL="..." npx graphile-worker
+```
+
+```javascript
+/// CLI 실행 경로에 `tasks/` 디렉토리를 생성 후 아래와 같이 작성합니다.
+/// tasks/hello.js
+module.exports = async (payload, helpers) => {
+  const { name } = payload;
+  // do something heavy job
+  helpers.logger.info(`Hello, ${name}`);
+};
+```
+
+NestJS 대응 라이브러리가 나와 있어 실사용에도 편리합니다.
+
+실제로 제가 개발팀장을 맡은 회사에서도 Graphile Worker를 사용해 카카오톡, 문자메시지, 네이티브 앱 푸시 등의 비동기 메시지 전송이나 각종 배치작업 등을 손쉽게 관리하고 있습니다.
+(내부 데이터베이스 정리 용도로는 과도기적으로 pg-cron을 사용하다 graphile-worker에 완전히 통합함)
+
+## 각종 SaaS 어드민 툴 대체: nocodb
+
+![nocodb](https://github.com/nocodb/nocodb/assets/86527202/a127c05e-2121-4af2-a342-128e0e2d0291)
+
+```shell
+docker run -d \
+  --name noco \
+  -v "$(pwd)"/nocodb:/usr/app/data/ \
+  -p 8080:8080 \
+  -e NC_DB="pg://host.docker.internal:5432?u=root&p=password&d=d1" \
+  -e NC_AUTH_JWT_SECRET="569a1821-0a93-45e8-87ab-eb857f20a010" \
+  nocodb/nocodb:latest
+```
+
+각종 SasS 어드민 툴을 PostgreSQL에 직접 연동된 형태로 아주 쉽게 대체할 수 있습니다.
+
+Zapier 같은 외부 노코드 툴과 연동이 잘 되는 점이 특히 좋습니다.
