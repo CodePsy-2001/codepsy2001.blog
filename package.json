@@ -1,0 +1,41 @@
+{
+  "name": "codepsy2001.blog",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "lint": "biome lint astro.config.mjs typography.ts $(find src -type f \\( -name '*.ts' -o -name '*.tsx' -o -name '*.css' \\))",
+    "format": "biome format --write .",
+    "check": "biome check astro.config.mjs typography.ts $(find src -type f \\( -name '*.ts' -o -name '*.tsx' -o -name '*.css' \\)) && astro check"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.9",
+    "@astrojs/markdown-remark": "^7.2.0",
+    "@astrojs/mdx": "^7.0.0",
+    "@astrojs/react": "^6.0.0",
+    "@astrojs/rss": "^4.0.18",
+    "@headlessui/react": "^2.2.10",
+    "@mapbox/rehype-prism": "^0.9.0",
+    "@tailwindcss/typography": "^0.5.20",
+    "@tailwindcss/vite": "^4.3.1",
+    "astro": "^7.0.3",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "remark-gfm": "^4.0.1",
+    "tailwindcss": "^4.3.1",
+    "typescript": "^6.0.3"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.1",
+    "@types/node": "^26.0.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "sharp": "0.35.2"
+  },
+  "packageManager": "pnpm@11.9.0"
+}

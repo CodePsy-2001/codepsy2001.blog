@@ -1,0 +1,14 @@
+---
+import PostsIndex from '@/components/pages/PostsIndex'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { getAllPosts } from '@/lib/posts'
+
+const posts = await getAllPosts()
+---
+
+<BaseLayout
+  title="게시글"
+  description="프로그래밍, 오픈소스 프로젝트, 공부한 것을 기록하고 정리합니다."
+>
+  <PostsIndex posts={posts} />
+</BaseLayout>

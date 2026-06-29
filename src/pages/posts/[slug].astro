@@ -1,0 +1,30 @@
+---
+import Utterances from '@/components/Utterances'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import PostLayout from '@/layouts/PostLayout.astro'
+import { normalizeSlug, type PostWithSlug } from '@/lib/posts'
+import { getCollection, render } from 'astro:content'
+
+export async function getStaticPaths() {
+  const posts = await getCollection('posts')
+
+  return posts.map((post) => ({
+    params: { slug: normalizeSlug(post.id) },
+    props: { post },
+  }))
+}
+
+const { post } = Astro.props
+const { Content } = await render(post)
+const article: PostWithSlug = {
+  slug: normalizeSlug(post.id),
+  ...post.data,
+}
+---
+
+<BaseLayout title={article.title} description={article.description}>
+  <PostLayout article={article}>
+    <Content />
+  </PostLayout>
+  <Utterances client:load />
+</BaseLayout>

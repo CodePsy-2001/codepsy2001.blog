@@ -1,0 +1,11 @@
+---
+import Home from '@/components/pages/Home'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { getAllPosts } from '@/lib/posts'
+
+const posts = (await getAllPosts()).slice(0, 4)
+---
+
+<BaseLayout>
+  <Home posts={posts} />
+</BaseLayout>
