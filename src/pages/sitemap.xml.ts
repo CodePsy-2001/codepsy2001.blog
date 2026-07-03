@@ -8,6 +8,15 @@ const defaultPages = [
   { path: '/projects', changeFrequency: 'weekly', priority: 0.8 },
 ]
 
+const projectPages: any[] = [
+  // {
+  //   path: '/projects/foobar',
+  //   lastModified: '2026-07-03',
+  //   changeFrequency: 'monthly',
+  //   priority: 0.6,
+  // },
+]
+
 export async function GET(context: APIContext) {
   const site = context.site ?? new URL('https://codepsy2001.blog')
   const now = new Date().toISOString()
@@ -16,6 +25,12 @@ export async function GET(context: APIContext) {
     ...defaultPages.map((page) => ({
       url: new URL(page.path, site).toString(),
       lastModified: now,
+      changeFrequency: page.changeFrequency,
+      priority: page.priority,
+    })),
+    ...projectPages.map((page) => ({
+      url: new URL(page.path, site).toString(),
+      lastModified: new Date(page.lastModified).toISOString(),
       changeFrequency: page.changeFrequency,
       priority: page.priority,
     })),
